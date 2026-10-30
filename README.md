@@ -120,3 +120,18 @@ En modo demo, los datos anteriores sin urbanización siguen disponibles en la co
 Las tarjetas enlazan a `/oferta/?id=IDENTIFICADOR`, una página independiente que funciona en hosting estático sin reglas de rutas dinámicas. Obtiene la oferta por ID desde Supabase, incluso al recargar o abrir un enlace compartido. Incluye foto, precio, urbanización, torre/sector, descripción, vendedor, WhatsApp y botón para copiar enlace. Las ofertas eliminadas, enlaces inválidos y errores de conexión tienen mensajes propios.
 
 El modal se conserva únicamente para confirmar la eliminación de una publicación. Las ofertas demo propias dependen del almacenamiento de su navegador; compartir su enlace no las copia a otros dispositivos. La página carga el contenido mediante JavaScript; las vistas previas sociales y SEO por producto requerirían renderizado de servidor o un servicio de metadatos adicional.
+
+
+## Galería, edición y publicidad de ejemplo
+
+Cada oferta admite hasta **5 fotos opcionales**. Se pueden seleccionar juntas o en varias tandas, quitar individualmente o todas, y elegir cuál será la portada. Cada foto nueva se orienta, recorta al centro en 4:3 y comprime a un máximo de 300 KB antes de subirla. La galería del detalle permite cambiar de foto con sus miniaturas. Las fotos de publicaciones antiguas se conservan.
+
+Para una base existente, ejecuta primero `supabase/migrations/20261030_communities.sql` si aún no lo hiciste, y después `supabase/migrations/20261030_listing_images.sql`, **antes de desplegar esta versión**. La segunda migración es transaccional y repetible: agrega `listings.images`, conserva la portada anterior y limita el arreglo a 5 imágenes. Para una instalación nueva, `schema.sql` incluye ambos cambios. No vuelvas a ejecutar el esquema completo sobre una base existente.
+
+El dueño puede editar desde «Mis publicaciones» o desde «Editar mi publicación» en el detalle. El formulario conserva los datos y las fotos, y permite reemplazarlas o retirarlas. El botón no aparece para otros usuarios; Supabase también exige que `owner_id` coincida con la sesión mediante RLS. Cambiar la URL no concede permisos de edición. Al publicar o editar, los selectores muestran únicamente departamentos y ciudades con urbanizaciones registradas; los filtros de exploración siguen mostrando todo Colombia.
+
+Si falla la subida de una foto o el guardado, se intenta retirar únicamente los archivos nuevos de ese intento y se mantienen las selecciones para reintentar. Las fotos antiguas retiradas de una oferta siguen en Storage para evitar borrar recursos referenciados; su limpieza requiere una tarea posterior.
+
+Los banners de `AdBanner.astro` aparecen en el catálogo y debajo del detalle, identificados como **PUBLICIDAD · EJEMPLO**. Enlazan a `/publicidad/`, que presenta los espacios disponibles. Son contenido local de demostración: no se cargan redes de anuncios, no hay cobros, formularios de contratación ni seguimiento publicitario. Para comercializarlos se deberán definir anunciantes, precios y contacto reales.
+
+`npm test` ejecuta todos los archivos `src/lib/*.test.ts`.

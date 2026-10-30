@@ -37,6 +37,7 @@ create table public.listings (
   kind text not null check (kind in ('Venta','Alquiler','Servicio')),
   condition text not null check (condition in ('Nuevo','Como nuevo','Usado','No aplica')),
   building text not null check (char_length(trim(building)) between 1 and 60),
+  images text[] not null default array[]::text[] constraint listings_images_limit check (cardinality(images) <= 5 and (array_ndims(images) is null or array_ndims(images) = 1) and array_position(images, null) is null and octet_length(array_to_string(images, '')) <= 10240),
   image text not null default '/images/community.jpg' check (char_length(image) <= 2048),
   seller text not null check (char_length(seller) between 1 and 120),
   contact text not null check (contact ~ '^[0-9]{8,15}$'),

@@ -40,7 +40,7 @@ export class LocationPicker {
     this.list = get('options') as HTMLDataListElement;
     this.hint = get('hint');
     for (const name of [
-      ...new Set(locations.map((city) => city.department)),
+      ...new Set(this.availableLocations.map((city) => city.department)),
     ].sort((a, b) => a.localeCompare(b, 'es')))
       this.department.add(new Option(name, name));
     this.department.addEventListener('change', () => {
@@ -62,6 +62,19 @@ export class LocationPicker {
   setCommunities(communities: Community[]) {
     const selection = this.selection;
     this.communities = communities;
+    this.department.replaceChildren(
+      new Option(
+        this.required
+          ? 'Selecciona un departamento'
+          : 'Todos los departamentos',
+        '',
+      ),
+    );
+    for (const name of [
+      ...new Set(this.availableLocations.map((city) => city.department)),
+    ].sort((a, b) => a.localeCompare(b, 'es')))
+      this.department.add(new Option(name, name));
+    this.department.disabled = this.required && !this.communities.length;
     this.restore(selection);
   }
   get selection() {
@@ -115,6 +128,13 @@ export class LocationPicker {
       community: community?.id,
     });
   }
+  private get availableLocations() {
+    if (!this.required) return locations;
+    const ids = new Set(
+      this.communities.map((community) => community.municipality_id),
+    );
+    return locations.filter((city) => ids.has(city.id));
+  }
   private updateCities() {
     this.city.replaceChildren(
       new Option(
@@ -122,7 +142,7 @@ export class LocationPicker {
         '',
       ),
     );
-    for (const city of locations
+    for (const city of this.availableLocations
       .filter((city) => city.department === this.department.value)
       .sort((a, b) => a.name.localeCompare(b.name, 'es')))
       this.city.add(new Option(city.name, city.id));

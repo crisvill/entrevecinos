@@ -1,3 +1,8 @@
+import {
+  listingImages,
+  imageUrl,
+  DEFAULT_LISTING_IMAGE,
+} from './listing-images';
 import { locations } from './locations';
 import {
   communityName,
@@ -95,17 +100,61 @@ async function initialize() {
       $('product-badges').append(badge);
     }
     const image = $<HTMLImageElement>('product-image');
-    image.alt = p.title;
-    image.onerror = () => {
-      image.onerror = null;
-      image.src = '/images/community.jpg';
+    const images = listingImages(p);
+    const gallery = images.length ? images : [DEFAULT_LISTING_IMAGE];
+    const showImage = (index: number) => {
+      image.alt = `${p.title} · foto ${index + 1}`;
+      image.onerror = () => {
+        image.onerror = null;
+        image.src = DEFAULT_LISTING_IMAGE;
+      };
+      image.src = imageUrl(gallery[index]);
+      $('product-image-count').textContent = images.length
+        ? `Foto ${index + 1} de ${images.length}`
+        : 'Imagen predeterminada';
+      $('product-thumbnails')
+        .querySelectorAll('button')
+        .forEach((button, i) =>
+          button.setAttribute('aria-pressed', String(i === index)),
+        );
     };
-    image.src =
-      /^(\/images\/[a-z-]+\.jpg|data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+|https:\/\/[^\s]+)$/.test(
-        p.image,
-      )
-        ? p.image
-        : '/images/community.jpg';
+    if (gallery.length > 1)
+      gallery.forEach((url, index) => {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.setAttribute(
+          'aria-label',
+          `Ver foto ${index + 1} de ${gallery.length}`,
+        );
+        const thumb = document.createElement('img');
+        thumb.src = imageUrl(url);
+        thumb.alt = '';
+        thumb.loading = 'lazy';
+        button.append(thumb);
+        button.addEventListener('click', () => showImage(index));
+        $('product-thumbnails').append(button);
+      });
+    showImage(0);
+    const showOwnerActions = (userId?: string) => {
+      const edit = $<HTMLAnchorElement>('product-edit');
+      edit.href = `/?edit=${encodeURIComponent(p.id)}`;
+      edit.hidden = !userId || userId !== p.owner_id;
+    };
+    if (supabase) {
+      supabase.auth.onAuthStateChange((_event, session) =>
+        showOwnerActions(session?.user.id),
+      );
+      const { data } = await supabase.auth.getSession();
+      showOwnerActions(data.session?.user.id);
+    } else {
+      try {
+        showOwnerActions(
+          sessionStorage.getItem('ev-demo') ? 'demo-neighbor' : undefined,
+        );
+      } catch {
+        showOwnerActions();
+      }
+    }
     if (/^\d{8,15}$/.test(p.contact)) {
       const contact = $<HTMLAnchorElement>('product-contact');
       contact.href = `https://wa.me/${p.contact}?text=${encodeURIComponent(`Hola ${p.seller}, vi tu oferta «${p.title}» en Entrevecinos y me interesa. ${location.href}`)}`;

@@ -5,6 +5,7 @@ import { categories } from '../lib/market';
 import communityImage from '../assets/community.jpg';
 import SpeedInsights from '@vercel/speed-insights/astro';
 import LocationFields from '../components/LocationFields.astro';
+import AdBanner from '../components/AdBanner.astro';
 const icons = [
   'layout-grid',
   'house',
@@ -240,6 +241,7 @@ const icons = [
             </div>
           </aside>
           <div>
+            <AdBanner variant="compact" />
             <div id="cards" class="cards" aria-live="polite"></div>
             <div id="empty" class="empty" hidden>
               <i data-lucide="search-x"></i>
@@ -255,6 +257,7 @@ const icons = [
           </div>
         </div>
       </section>
+      <AdBanner />
       <section class="publish-banner">
         <div class="banner-icon">
           <i data-lucide="store"></i>
@@ -369,111 +372,119 @@ const icons = [
       <h2 id="publish-title">Algo bueno que ofrecer.</h2>
       <p>Cuéntales a tus vecinos qué tienes para ellos.</p>
       <form id="publish-form">
-        <input type="hidden" name="id" />
-        <label>
-          Título de tu oferta
-          <input
-            name="title"
-            required
-            maxlength="90"
-            placeholder="Ej. Galletas caseras por encargo"
-          />
-        </label>
-        <div class="form-row">
+        <fieldset id="publish-fields" class="publish-fields">
+          <input type="hidden" name="id" />
           <label>
-            Categoría
-            <select name="category" required>
-              {categories.slice(1).map((c) => (
-                <option>{c}</option>
-              ))}
-            </select>
-          </label>
-          <label>
-            Tipo
-            <select name="kind">
-              <option>Venta</option>
-              <option>Alquiler</option>
-              <option>Servicio</option>
-            </select>
-          </label>
-        </div>
-        <div class="form-row">
-          <label>
-            Precio (COP)
+            Título de tu oferta
             <input
-              type="number"
-              name="price"
-              min="0"
-              max="1000000000"
-              step="1"
+              name="title"
               required
-              placeholder="0 para regalar"
+              maxlength="90"
+              placeholder="Ej. Galletas caseras por encargo"
             />
           </label>
+          <div class="form-row">
+            <label>
+              Categoría
+              <select name="category" required>
+                {categories.slice(1).map((c) => (
+                  <option>{c}</option>
+                ))}
+              </select>
+            </label>
+            <label>
+              Tipo
+              <select name="kind">
+                <option>Venta</option>
+                <option>Alquiler</option>
+                <option>Servicio</option>
+              </select>
+            </label>
+          </div>
+          <div class="form-row">
+            <label>
+              Precio (COP)
+              <input
+                type="number"
+                name="price"
+                min="0"
+                max="1000000000"
+                step="1"
+                required
+                placeholder="0 para regalar"
+              />
+            </label>
+            <label>
+              Estado
+              <select name="condition">
+                <option>Nuevo</option>
+                <option>Como nuevo</option>
+                <option>Usado</option>
+                <option>No aplica</option>
+              </select>
+            </label>
+          </div>
           <label>
-            Estado
-            <select name="condition">
-              <option>Nuevo</option>
-              <option>Como nuevo</option>
-              <option>Usado</option>
-              <option>No aplica</option>
-            </select>
-          </label>
-        </div>
-        <label>
-          Descripción
-          <textarea
-            name="description"
-            required
-            rows="3"
-            maxlength="2000"
-            placeholder="Detalles, disponibilidad y todo lo que deban saber…"
-          ></textarea>
-        </label>
-        <LocationFields prefix="publish" required />
-        <div class="form-row">
-          <label>
-            Torre o sector
-            <input
-              name="building"
+            Descripción
+            <textarea
+              name="description"
               required
-              maxlength="60"
-              placeholder="Ej. Torre 2, Bloque A o Casas"
-            />
+              rows="3"
+              maxlength="2000"
+              placeholder="Detalles, disponibilidad y todo lo que deban saber…"
+            ></textarea>
           </label>
+          <LocationFields prefix="publish" required />
+          <div class="form-row">
+            <label>
+              Torre o sector
+              <input
+                name="building"
+                required
+                maxlength="60"
+                placeholder="Ej. Torre 2, Bloque A o Casas"
+              />
+            </label>
+            <label>
+              WhatsApp con código de país
+              <input
+                name="contact"
+                type="tel"
+                pattern="[0-9]{8,15}"
+                required
+                placeholder="573001234567"
+              />
+              <small>Visible al abrir tu oferta.</small>
+            </label>
+          </div>
           <label>
-            WhatsApp con código de país
+            Fotos de la oferta (opcional, máximo 5)
             <input
-              name="contact"
-              type="tel"
-              pattern="[0-9]{8,15}"
-              required
-              placeholder="573001234567"
+              name="photo"
+              type="file"
+              multiple
+              accept="image/jpeg,image/png,image/webp"
             />
-            <small>Visible al abrir tu oferta.</small>
+            <small>
+              JPG, PNG o WebP. Se recorta al centro en formato 4:3 y se reduce
+              automáticamente a un máximo de 300 KB. Mantén el producto en el
+              centro.
+            </small>
           </label>
-        </div>
-        <label>
-          Foto de la oferta (opcional)
-          <input
-            name="photo"
-            type="file"
-            accept="image/jpeg,image/png,image/webp"
-          />
-          <small>
-            JPG, PNG o WebP. Se recorta al centro en formato 4:3 y se reduce
-            automáticamente a un máximo de 300 KB. Mantén el producto en el
-            centro.
-          </small>
-        </label>
-        <p id="photo-status" class="small" role="status"></p>
-        <button id="remove-photo" class="text-button" type="button" hidden>
-          Quitar foto
-        </button>
-        <p id="publish-message" class="form-message" role="status"></p>
-        <button class="button dark full" type="submit">
-          Publicar oferta <i data-lucide="arrow-up-right"></i>
-        </button>
+          <div
+            id="photo-preview"
+            class="photo-preview"
+            aria-label="Fotos de la publicación"
+          ></div>
+          <p id="photo-status" class="small" role="status"></p>
+          <button id="remove-photo" class="text-button" type="button" hidden>
+            Quitar todas las fotos
+          </button>
+          <p id="publish-message" class="form-message" role="status"></p>
+          <button class="button dark full" type="submit">
+            Publicar oferta <i data-lucide="arrow-up-right"></i>
+          </button>
+        </fieldset>
       </form>
     </dialog>
     <dialog id="detail-dialog" class="detail-dialog">

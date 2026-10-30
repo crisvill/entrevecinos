@@ -1,0 +1,60 @@
+---
+import '../styles/global.css';
+import AdBanner from '../components/AdBanner.astro';
+---
+
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Publicidad local · Entrevecinos</title>
+    <meta
+      name="description"
+      content="Conoce los espacios de publicidad local de Entrevecinos."
+    />
+    <link rel="icon" href="/favicon.svg" />
+  </head>
+  <body>
+    <header class="header">
+      <a class="brand" href="/">
+        <img src="/favicon.svg" alt="" />
+        entre<span>vecinos</span>
+        <span class="brand-dot">.</span>
+      </a>
+      <a href="/" class="text-button">
+        Volver al catálogo
+      </a>
+    </header>
+    <main class="advertising-page">
+      <span class="eyebrow">COMERCIO LOCAL</span>
+      <h1>Tu negocio, más cerca de la comunidad.</h1>
+      <p>
+        Entrevecinos sigue siendo gratis para descubrir y publicar ofertas. Los
+        espacios patrocinados permiten dar visibilidad a comercios y servicios
+        locales.
+      </p>
+      <div class="advertising-options">
+        <section>
+          <h2>En el catálogo</h2>
+          <p>
+            Presenta tu negocio mientras los vecinos exploran las ofertas de la
+            comunidad.
+          </p>
+        </section>
+        <section>
+          <h2>En el detalle de una oferta</h2>
+          <p>
+            Un espacio al final de la página, sin interrumpir el contacto entre
+            vecinos.
+          </p>
+        </section>
+      </div>
+      <AdBanner />
+      <p class="small">
+        Los banners actuales son ejemplos visuales. La contratación de espacios
+        estará disponible próximamente.
+      </p>
+    </main>
+  </body>
+</html>

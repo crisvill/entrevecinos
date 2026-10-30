@@ -22,6 +22,7 @@ export interface Listing {
   building: string;
   community_id?: string;
   image: string;
+  images?: string[];
   seller: string;
   contact: string;
   created_at: string;

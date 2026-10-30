@@ -1,0 +1,24 @@
+---
+const { variant = 'wide' } = Astro.props;
+---
+
+<aside
+  class:list={['ad-banner', `ad-banner-${variant}`]}
+  aria-label="Publicidad de ejemplo"
+>
+  <div class="ad-copy">
+    <span class="ad-label">PUBLICIDAD · EJEMPLO</span>
+    <h2>
+      {variant === 'compact'
+        ? 'Tu negocio también es parte del barrio.'
+        : 'Haz que tus próximos clientes sean tus vecinos.'}
+    </h2>
+    <p>
+      Un espacio para comercios y servicios cerca de tu comunidad. Tu marca
+      podría estar aquí.
+    </p>
+  </div>
+  <a class="button dark" href="/publicidad/">
+    Conoce los espacios <span aria-hidden="true">↗</span>
+  </a>
+</aside>

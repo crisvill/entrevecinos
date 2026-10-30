@@ -44,6 +44,8 @@ import {
   type Community,
 } from './communities';
 import { LocationPicker } from './locations';
+import { PhotoPicker } from './photo-picker';
+import { listingImages, DEFAULT_LISTING_IMAGE } from './listing-images';
 const icons = {
   UserRound,
   Plus,
@@ -79,22 +81,15 @@ const detailDialog = $<HTMLDialogElement>('detail-dialog');
 const publishForm = $<HTMLFormElement>('publish-form');
 const authForm = $<HTMLFormElement>('auth-form');
 const photoInput = publishForm.elements.namedItem('photo') as HTMLInputElement;
-let removePhoto = false;
-let existingPhoto = false;
-function updatePhotoControls() {
-  const selected = photoInput.files?.[0];
-  $('remove-photo').hidden = !selected && (!existingPhoto || removePhoto);
-  $('photo-status').textContent = selected
-    ? `Foto seleccionada: ${selected.name}`
-    : existingPhoto && !removePhoto
-      ? 'La oferta conserva su foto actual.'
-      : 'Sin foto propia. Se mostrará la imagen predeterminada.';
-}
-photoInput.addEventListener('change', updatePhotoControls);
-$('remove-photo').addEventListener('click', () => {
-  photoInput.value = '';
-  removePhoto = true;
-  updatePhotoControls();
+const photoPicker = new PhotoPicker(
+  photoInput,
+  $('photo-preview'),
+  $('photo-status'),
+  $<HTMLButtonElement>('remove-photo'),
+);
+let publishing = false;
+publishDialog.addEventListener('cancel', (event) => {
+  if (publishing) event.preventDefault();
 });
 const esc = (s: string) =>
   s.replace(
@@ -319,6 +314,11 @@ function openAuth() {
   authDialog.showModal();
 }
 function openPublish(item?: Listing) {
+  if (publishing) return;
+  if (item && item.owner_id !== currentUser?.id) {
+    toast('Solo el dueño de la publicación puede editarla.');
+    return;
+  }
   if (!currentUser) {
     pendingPublish = true;
     openAuth();
@@ -328,11 +328,7 @@ function openPublish(item?: Listing) {
   if (item)
     publishLocation.setCommunity(item.community_id || ORIGINAL_COMMUNITY_ID);
   else publishLocation.restore(selectedLocation);
-  removePhoto = false;
-  existingPhoto = Boolean(
-    item?.image && item.image !== '/images/community.jpg',
-  );
-  updatePhotoControls();
+  photoPicker.reset(listingImages(item));
   $('publish-message').textContent = '';
   $('publish-title').textContent = item
     ? 'Unos pequeños ajustes.'
@@ -357,6 +353,7 @@ document.querySelectorAll<HTMLDialogElement>('dialog').forEach((dialog) => {
     .querySelector('[data-close]')
     ?.addEventListener('click', () => dialog.close());
   dialog.addEventListener('click', (e) => {
+    if (dialog === publishDialog && publishing) return;
     if (e.target === dialog) {
       const r = dialog.getBoundingClientRect();
       if (
@@ -618,39 +615,55 @@ publishForm.addEventListener('submit', async (e) => {
   )!;
   button.disabled = true;
   $('publish-message').textContent = '';
-  let uploadedPath: string | null = null;
+  const uploadedPaths: string[] = [];
+  let savedRemotely = false;
+  const fields = $<HTMLFieldSetElement>('publish-fields');
+  const close = publishDialog.querySelector<HTMLButtonElement>('[data-close]')!;
+  const owner = currentUser;
+  publishing = true;
   try {
     const d = new FormData(publishForm);
+    const selectedPhotos = [...photoPicker.entries];
+    fields.disabled = true;
+    close.disabled = true;
     const id = String(d.get('id') || createId());
     const old = items.find((p) => p.id === id);
-    if (old && old.owner_id !== currentUser.id)
+    if (old && old.owner_id !== owner.id)
       throw new Error('Esta oferta pertenece a otro vecino.');
-    let image = (!removePhoto && old?.image) || '/images/community.jpg';
-    const originalPhoto = d.get('photo') as File;
-    if (originalPhoto?.size) {
-      $('publish-message').textContent = 'Ajustando y comprimiendo tu foto…';
-      const file = await optimizePhoto(originalPhoto);
-      $('publish-message').textContent = 'Foto lista. Guardando tu oferta…';
+    if (selectedPhotos.length > 5)
+      throw new Error('Puedes agregar un máximo de 5 fotos.');
+    const images: string[] = [];
+    for (const [index, photo] of selectedPhotos.entries()) {
+      if (!photo.file) {
+        images.push(photo.url);
+        continue;
+      }
+      $('publish-message').textContent =
+        `Optimizando foto ${index + 1} de ${selectedPhotos.length}…`;
+      const file = await optimizePhoto(photo.file);
       if (supabase) {
         const ext = {
           'image/jpeg': 'jpg',
           'image/png': 'png',
           'image/webp': 'webp',
         }[file.type]!;
-        uploadedPath = `${currentUser.id}/${createId()}.${ext}`;
+        const path = `${owner.id}/${createId()}.${ext}`;
         const { error } = await supabase.storage
           .from('listing-images')
-          .upload(uploadedPath, file, { contentType: file.type });
+          .upload(path, file, { contentType: file.type });
         if (error) throw error;
-        image = supabase.storage
-          .from('listing-images')
-          .getPublicUrl(uploadedPath).data.publicUrl;
-      } else image = await photoData(file);
+        uploadedPaths.push(path);
+        images.push(
+          supabase.storage.from('listing-images').getPublicUrl(path).data
+            .publicUrl,
+        );
+      } else images.push(await photoData(file));
     }
+    $('publish-message').textContent = 'Guardando tu oferta…';
     const listing: Listing = {
       id,
-      owner_id: currentUser.id,
-      seller: currentUser.name,
+      owner_id: owner.id,
+      seller: owner.name,
       title: String(d.get('title')).trim(),
       description: String(d.get('description')).trim(),
       category: String(d.get('category')) as Category,
@@ -660,7 +673,8 @@ publishForm.addEventListener('submit', async (e) => {
       building: String(d.get('building')).trim(),
       community_id: String(d.get('community_id')),
       contact: String(d.get('contact')).trim(),
-      image,
+      image: images[0] || DEFAULT_LISTING_IMAGE,
+      images,
       created_at: old?.created_at || new Date().toISOString(),
     };
     if (
@@ -686,11 +700,12 @@ publishForm.addEventListener('submit', async (e) => {
             .from('listings')
             .update(listing)
             .eq('id', id)
-            .eq('owner_id', currentUser.id)
+            .eq('owner_id', owner.id)
             .select()
             .single()
         : await supabase.from('listings').insert(listing).select().single();
       if (result.error) throw result.error;
+      savedRemotely = true;
     }
     const next = [listing, ...items.filter((p) => p.id !== id)];
     if (!supabase) {
@@ -703,6 +718,7 @@ publishForm.addEventListener('submit', async (e) => {
       }
     }
     items = next;
+    photoPicker.reset([]);
     updateBuildings();
     publishDialog.close();
     view = 'mine';
@@ -718,13 +734,21 @@ publishForm.addEventListener('submit', async (e) => {
       old ? 'Cambios guardados.' : '¡Tu oferta ya forma parte de la comunidad!',
     );
   } catch (error) {
-    if (supabase && uploadedPath)
-      await supabase.storage.from('listing-images').remove([uploadedPath]);
+    if (supabase && uploadedPaths.length && !savedRemotely) {
+      try {
+        await supabase.storage.from('listing-images').remove(uploadedPaths);
+      } catch {
+        /* Preserve the original error. */
+      }
+    }
     $('publish-message').textContent =
       error instanceof Error
         ? error.message
         : 'No se pudo guardar. Revisa la conexión y vuelve a intentarlo.';
   } finally {
+    publishing = false;
+    fields.disabled = false;
+    close.disabled = false;
     button.disabled = false;
   }
 });
@@ -786,6 +810,18 @@ async function initialize() {
       if (sessionStorage.getItem('ev-demo'))
         setUser('demo-neighbor', 'Vecino de prueba');
     } catch {}
+  }
+  const editId = new URLSearchParams(location.search).get('edit');
+  if (editId) {
+    const listing = items.find((item) => item.id === editId);
+    if (listing && listing.owner_id === currentUser?.id) openPublish(listing);
+    else
+      toast(
+        'Esta publicación no está disponible para editar con tu sesión actual.',
+      );
+    const url = new URL(location.href);
+    url.searchParams.delete('edit');
+    history.replaceState(null, '', url);
   }
 }
 void initialize();

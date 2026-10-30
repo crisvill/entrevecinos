@@ -1,5 +1,6 @@
 ---
 import '../styles/global.css';
+import AdBanner from '../components/AdBanner.astro';
 ---
 
 <!doctype html>
@@ -33,7 +34,15 @@ import '../styles/global.css';
         Cargando oferta…
       </p>
       <article id="product" class="product-layout" hidden>
-        <img id="product-image" class="product-image" alt="" />
+        <div class="product-gallery">
+          <img id="product-image" class="product-image" alt="" />
+          <p id="product-image-count" class="small" role="status"></p>
+          <div
+            id="product-thumbnails"
+            class="product-thumbnails"
+            aria-label="Galería de fotos"
+          ></div>
+        </div>
         <div class="detail-info">
           <div id="product-category" class="eyebrow"></div>
           <h1 id="product-title"></h1>
@@ -62,12 +71,16 @@ import '../styles/global.css';
           <p class="detail-hint">
             Acuerda la entrega y el pago directamente con tu vecino.
           </p>
+          <a id="product-edit" class="button dark" hidden>
+            Editar mi publicación
+          </a>
           <button id="product-share" class="text-button" type="button">
             Copiar enlace de la oferta
           </button>
           <p id="share-status" class="small" role="status"></p>
         </div>
       </article>
+      <AdBanner variant="compact" />
       <noscript>Activa JavaScript para consultar esta oferta.</noscript>
     </main>
     <script>
