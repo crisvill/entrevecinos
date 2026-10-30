@@ -1,0 +1,42 @@
+---
+const { prefix, required = false } = Astro.props;
+---
+
+<div class="location-fields">
+  <p class="small">País: Colombia</p>
+  <label>
+    Departamento
+    <select id={`${prefix}-department`} required={required}>
+      <option value="">
+        {required ? 'Selecciona un departamento' : 'Todos los departamentos'}
+      </option>
+    </select>
+  </label>
+  <label>
+    Ciudad o municipio
+    <select id={`${prefix}-city`} required={required} disabled>
+      <option value="">
+        {required ? 'Selecciona una ciudad' : 'Todas las ciudades'}
+      </option>
+    </select>
+  </label>
+  <label>
+    Urbanización
+    <input
+      id={`${prefix}-community`}
+      list={`${prefix}-options`}
+      placeholder="Escribe el nombre de tu urbanización"
+      autocomplete="off"
+      required={required}
+      disabled
+      aria-describedby={`${prefix}-hint`}
+    />
+    <datalist id={`${prefix}-options`}></datalist>
+  </label>
+  <input
+    type="hidden"
+    id={`${prefix}-community-id`}
+    name={required ? 'community_id' : undefined}
+  />
+  <p id={`${prefix}-hint`} class="small" role="status"></p>
+</div>

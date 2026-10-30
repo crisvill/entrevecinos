@@ -37,6 +37,13 @@ import {
 import { supabase } from './supabase';
 import { createId } from './id';
 import { optimizePhoto } from './photo';
+import {
+  communityName,
+  demoCommunities,
+  ORIGINAL_COMMUNITY_ID,
+  type Community,
+} from './communities';
+import { LocationPicker } from './locations';
 const icons = {
   UserRound,
   Plus,
@@ -116,6 +123,51 @@ const storedFavorites = read<string[]>('ev-favorites-v1', []);
 let favorites = new Set<string>(
   Array.isArray(storedFavorites) ? storedFavorites : [],
 );
+let communities: Community[] = supabase ? [] : demoCommunities;
+let selectedLocation = read<{
+  department?: string;
+  municipality?: string;
+  community?: string;
+}>('ev-location-v1', {});
+if (!selectedLocation || typeof selectedLocation !== 'object')
+  selectedLocation = {};
+const filterLocation = new LocationPicker('filter', false, () => {
+  selectedLocation = filterLocation.selection;
+  try {
+    localStorage.setItem('ev-location-v1', JSON.stringify(selectedLocation));
+  } catch {}
+  $<HTMLSelectElement>('building').value = '';
+  updateBuildings();
+  render();
+});
+const publishLocation = new LocationPicker('publish', true, () => {});
+function updateCommunities() {
+  filterLocation.setCommunities(communities);
+  publishLocation.setCommunities(communities);
+  filterLocation.restore(selectedLocation);
+}
+function updateBuildings() {
+  const select = $<HTMLSelectElement>('building');
+  const previous = select.value;
+  const community = filterLocation.selection.community;
+  const allowed = filterLocation.communityIds;
+  const buildings = [
+    ...new Set(
+      items
+        .filter(
+          (p) =>
+            (!community ||
+              (p.community_id || ORIGINAL_COMMUNITY_ID) === community) &&
+            (!allowed ||
+              allowed.includes(p.community_id || ORIGINAL_COMMUNITY_ID)),
+        )
+        .map((p) => p.building),
+    ),
+  ].sort();
+  select.replaceChildren(new Option('Todas las torres o sectores', ''));
+  for (const building of buildings) select.add(new Option(building, building));
+  select.value = buildings.includes(previous) ? previous : '';
+}
 let currentUser: { id: string; name: string } | null = null;
 let view: 'all' | 'favorites' | 'mine' = 'all';
 let category = 'Todas';
@@ -127,7 +179,10 @@ function authErrorMessage(error: unknown): string {
   const code = (error as { code?: string } | null)?.code;
   if (code === 'email_not_confirmed')
     return 'Tu correo aún no está confirmado. Revisa también spam o solicita otro correo de confirmación.';
-  if (code === 'over_email_send_rate_limit' || code === 'over_request_rate_limit')
+  if (
+    code === 'over_email_send_rate_limit' ||
+    code === 'over_request_rate_limit'
+  )
     return 'Se alcanzó el límite de solicitudes. Espera unos minutos antes de volver a intentar. Si continúa, contacta al administrador.';
   if (code === 'email_address_not_authorized')
     return 'El servicio de correo todavía no permite enviar a esta dirección. Contacta al administrador para habilitar el envío de confirmaciones.';
@@ -172,6 +227,8 @@ function filters(): Filters {
         'input[name="condition"]:checked',
       )?.value || '',
     building: $<HTMLSelectElement>('building').value,
+    community: filterLocation.selection.community,
+    communityIds: filterLocation.communityIds,
     sort: $<HTMLSelectElement>('sort').value,
   };
 }
@@ -186,7 +243,7 @@ function render() {
   $('cards').innerHTML = results
     .map(
       (p) =>
-        `<article class="listing-card"><div class="card-photo"><button class="open-detail" data-detail="${esc(p.id)}" aria-label="Ver ${esc(p.title)}"><img src="${safeImage(p.image)}" alt="${esc(p.title)}" loading="lazy"/></button><span class="card-tag">${esc(p.kind === 'Venta' ? p.condition : p.kind === 'Alquiler' ? 'En alquiler' : 'Servicio local')}</span><button class="save-button ${favorites.has(p.id) ? 'saved' : ''}" data-save="${esc(p.id)}" aria-label="${favorites.has(p.id) ? 'Quitar de' : 'Guardar en'} favoritos" aria-pressed="${favorites.has(p.id)}"><i data-lucide="heart"></i></button></div><div class="card-body"><div class="card-category">${esc(p.category)}</div><button class="card-title" data-detail="${esc(p.id)}">${esc(p.title)}</button><div class="card-price">${money(p.price)}${p.kind === 'Alquiler' ? '<small>/ mes</small>' : ''}</div><div class="card-meta"><span class="seller-avatar">${esc(p.seller.slice(0, 1))}</span><span>${esc(p.seller)}</span><span class="card-location"><i data-lucide="map-pin"></i>${esc(p.building)}</span></div></div>${p.owner_id === currentUser?.id ? `<div class="card-owner-actions"><button data-edit="${esc(p.id)}">Editar</button><button data-delete="${esc(p.id)}">Eliminar</button></div>` : ''}</article>`,
+        `<article class="listing-card"><div class="card-photo"><a class="open-detail" href="/oferta/?id=${encodeURIComponent(p.id)}" aria-label="Ver ${esc(p.title)}"><img src="${safeImage(p.image)}" alt="${esc(p.title)}" loading="lazy"/></a><span class="card-tag">${esc(p.kind === 'Venta' ? p.condition : p.kind === 'Alquiler' ? 'En alquiler' : 'Servicio local')}</span><button class="save-button ${favorites.has(p.id) ? 'saved' : ''}" data-save="${esc(p.id)}" aria-label="${favorites.has(p.id) ? 'Quitar de' : 'Guardar en'} favoritos" aria-pressed="${favorites.has(p.id)}"><i data-lucide="heart"></i></button></div><div class="card-body"><div class="card-category">${esc(p.category)}</div><a class="card-title" href="/oferta/?id=${encodeURIComponent(p.id)}">${esc(p.title)}</a><div class="card-price">${money(p.price)}${p.kind === 'Alquiler' ? '<small>/ mes</small>' : ''}</div><div class="card-meta"><span class="seller-avatar">${esc(p.seller.slice(0, 1))}</span><span>${esc(p.seller)}</span><span class="card-location"><i data-lucide="map-pin"></i>${esc(communityName(p.community_id, communities))} · ${esc(p.building)}</span></div></div>${p.owner_id === currentUser?.id ? `<div class="card-owner-actions"><button data-edit="${esc(p.id)}">Editar</button><button data-delete="${esc(p.id)}">Eliminar</button></div>` : ''}</article>`,
     )
     .join('');
   $('empty').hidden = results.length > 0;
@@ -216,6 +273,12 @@ function render() {
   refreshIcons();
 }
 function resetFilters() {
+  selectedLocation = {};
+  filterLocation.restore({});
+  try {
+    localStorage.removeItem('ev-location-v1');
+  } catch {}
+  updateBuildings();
   category = 'Todas';
   $<HTMLInputElement>('search').value = '';
   $<HTMLInputElement>('price').value = '1000000';
@@ -248,6 +311,7 @@ async function load() {
     return;
   }
   items = data as Listing[];
+  updateBuildings();
   render();
 }
 function openAuth() {
@@ -261,8 +325,13 @@ function openPublish(item?: Listing) {
     return;
   }
   publishForm.reset();
+  if (item)
+    publishLocation.setCommunity(item.community_id || ORIGINAL_COMMUNITY_ID);
+  else publishLocation.restore(selectedLocation);
   removePhoto = false;
-  existingPhoto = Boolean(item?.image && item.image !== '/images/community.jpg');
+  existingPhoto = Boolean(
+    item?.image && item.image !== '/images/community.jpg',
+  );
   updatePhotoControls();
   $('publish-message').textContent = '';
   $('publish-title').textContent = item
@@ -282,22 +351,6 @@ function openPublish(item?: Listing) {
         el.value = String(value);
     }
   publishDialog.showModal();
-}
-function showDetail(id: string) {
-  const p = items.find((item) => item.id === id);
-  if (!p) return;
-  const contact = /^\d{8,15}$/.test(p.contact)
-    ? `https://wa.me/${p.contact}?text=${encodeURIComponent(`Hola ${p.seller}, vi tu oferta «${p.title}» en Entrevecinos y me interesa.`)}`
-    : '';
-  $('detail-content').innerHTML =
-    `<img class="detail-photo" src="${safeImage(p.image)}" alt="${esc(p.title)}"/><div class="detail-info"><div class="eyebrow">${esc(p.category)}</div><h2>${esc(p.title)}</h2><div class="card-price">${money(p.price)}${p.kind === 'Alquiler' ? '<small>/ mes</small>' : ''}</div><div class="detail-badges"><span>${esc(p.kind)}</span><span>${esc(p.condition)}</span><span>${esc(p.building)}</span></div><p>${esc(p.description)}</p><div class="seller-block"><span class="seller-avatar">${esc(p.seller.slice(0, 1))}</span><div>${esc(p.seller)}<small>Vecino de ${esc(p.building)}</small></div></div>${contact ? `<a class="button dark contact-link" href="${contact}" target="_blank" rel="noopener noreferrer">Contactar por WhatsApp <i data-lucide="arrow-up-right"></i></a>` : '<button class="button dark full" id="sample-contact">Esta es una oferta de ejemplo</button>'}<p class="detail-hint">Acuerda la entrega y el pago directamente con tu vecino.</p></div>`;
-  $('sample-contact')?.addEventListener('click', () =>
-    toast(
-      'Las ofertas de ejemplo no tienen contacto. Publica una propia para probar el flujo.',
-    ),
-  );
-  detailDialog.showModal();
-  refreshIcons();
 }
 document.querySelectorAll<HTMLDialogElement>('dialog').forEach((dialog) => {
   dialog
@@ -394,7 +447,6 @@ $('empty-reset').addEventListener('click', () => {
 $('cards').addEventListener('click', async (e) => {
   const button = (e.target as HTMLElement).closest<HTMLButtonElement>('button');
   if (!button) return;
-  if (button.dataset.detail) showDetail(button.dataset.detail);
   if (button.dataset.save) {
     const id = button.dataset.save;
     const next = new Set(favorites);
@@ -433,6 +485,7 @@ $('cards').addEventListener('click', async (e) => {
         if (!supabase)
           localStorage.setItem('ev-listings-v1', JSON.stringify(next));
         items = next;
+        updateBuildings();
         detailDialog.close();
         render();
         toast('Oferta eliminada.');
@@ -604,12 +657,16 @@ publishForm.addEventListener('submit', async (e) => {
       kind: String(d.get('kind')) as Listing['kind'],
       condition: String(d.get('condition')) as Listing['condition'],
       price: Number(d.get('price')),
-      building: String(d.get('building')),
+      building: String(d.get('building')).trim(),
+      community_id: String(d.get('community_id')),
       contact: String(d.get('contact')).trim(),
       image,
       created_at: old?.created_at || new Date().toISOString(),
     };
     if (
+      !communities.some((community) => community.id === listing.community_id) ||
+      !listing.building ||
+      listing.building.length > 60 ||
       !listing.title ||
       !listing.description ||
       !categories
@@ -621,7 +678,7 @@ publishForm.addEventListener('submit', async (e) => {
       !/^\d{8,15}$/.test(listing.contact)
     )
       throw new Error(
-        'Revisa el título, la descripción, el precio y el teléfono.',
+        'Revisa la urbanización, la torre o sector, el título, la descripción, el precio y el teléfono.',
       );
     if (supabase) {
       const result = old
@@ -646,9 +703,17 @@ publishForm.addEventListener('submit', async (e) => {
       }
     }
     items = next;
+    updateBuildings();
     publishDialog.close();
     view = 'mine';
     resetFilters();
+    filterLocation.setCommunity(listing.community_id!);
+    selectedLocation = filterLocation.selection;
+    try {
+      localStorage.setItem('ev-location-v1', JSON.stringify(selectedLocation));
+    } catch {}
+    updateBuildings();
+    render();
     toast(
       old ? 'Cambios guardados.' : '¡Tu oferta ya forma parte de la comunidad!',
     );
@@ -672,8 +737,22 @@ $('about-demo').addEventListener('click', () =>
 );
 async function initialize() {
   refreshIcons();
+  if (!supabase) updateCommunities();
+  updateBuildings();
   render();
   if (supabase) {
+    const { data: communityData, error: communityError } = await supabase
+      .from('communities')
+      .select('id, name, municipality_id')
+      .order('name');
+    if (communityError) {
+      toast(
+        'No pudimos cargar las urbanizaciones. Revisa la conexión y aplica la migración de comunidades en Supabase.',
+      );
+    } else {
+      communities = communityData || [];
+      updateCommunities();
+    }
     $('demo-label').hidden = true;
     $('demo-login').hidden = true;
     $('auth-demo-note').hidden = true;

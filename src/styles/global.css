@@ -1712,3 +1712,72 @@ input[type='file']::file-selector-button {
     font-size: 11px;
   }
 }
+
+/* Standalone product detail, including direct visits from shared links. */
+.product-page {
+  max-width: 1160px;
+  margin: 32px auto 72px;
+  padding: 0 24px;
+}
+.product-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+  gap: 32px;
+  margin-top: 24px;
+  align-items: start;
+}
+.product-layout[hidden] {
+  display: none;
+}
+.product-image {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: contain;
+  background: #f2f0eb;
+  border-radius: 20px;
+}
+.product-layout .detail-info {
+  padding: 12px 0;
+  min-width: 0;
+}
+.product-layout h1 {
+  font-size: clamp(26px, 4vw, 38px);
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+}
+.product-description {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.product-layout .detail-badges {
+  flex-wrap: wrap;
+}
+@media (max-width: 700px) {
+  .product-layout {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  .product-page {
+    padding: 0 16px;
+  }
+}
+.location-fields {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+.location-fields p {
+  margin: 0;
+}
+.location-fields input:disabled,
+.location-fields select:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+.card-photo a.open-detail {
+  display: block;
+}
+.card-title {
+  text-decoration: none;
+  color: inherit;
+}

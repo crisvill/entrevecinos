@@ -45,7 +45,7 @@ En producción las variables `PUBLIC_*` se incorporan durante el build. Debes vo
 
 ## Alcance
 
-La app representa **una comunidad**. El catálogo, las fotos y los teléfonos publicados son públicos; las escrituras requieren cuenta. No verifica por sí sola que la persona resida en la comunidad. Si necesitas acceso exclusivo por invitación o múltiples comunidades, agrega membresías y restringe las políticas `SELECT` y `INSERT` antes de abrir el servicio.
+La app admite **varias urbanizaciones**. El catálogo muestra todas por defecto y permite filtrar por urbanización y torre o sector. La selección es libre: no verifica residencia ni implica membresía. El catálogo, las fotos y los teléfonos publicados son públicos; las escrituras requieren cuenta y solo el propietario puede editar o eliminar su oferta. Para acceso exclusivo por invitación se necesita implementar membresías y restringir las políticas RLS en un cambio adicional.
 
 No procesa pagos ni reservas. El comprador acuerda entrega y pago por WhatsApp. No incluye chat, moderación, panel administrativo ni verificación de identidad. Los alquileres se muestran por mes. Las fotos sustituidas o de publicaciones eliminadas quedan en Storage para evitar borrar recursos en uso; puedes programar una limpieza de archivos sin referencia.
 
@@ -58,7 +58,7 @@ No procesa pagos ni reservas. El comprador acuerda entrega y pago por WhatsApp. 
 - Cliente de Supabase: `src/lib/supabase.ts`.
 - Permisos y modelo de datos: `supabase/schema.sql`.
 
-Al cambiar categorías, torres o tipos, actualiza tanto el formulario como los tipos y las restricciones SQL. Para cambiar moneda, edita `money()` y las etiquetas de precios. El filtro de 1.000.000 representa «sin límite», y los precios superiores siguen apareciendo al usar esa posición.
+Al cambiar categorías o tipos, actualiza tanto el formulario como los tipos y las restricciones SQL. La torre o sector es texto libre de hasta 60 caracteres. Para cambiar moneda, edita `money()` y las etiquetas de precios. El filtro de 1.000.000 representa «sin límite», y los precios superiores siguen apareciendo al usar esa posición.
 
 ## Comprobación y publicación
 
@@ -92,3 +92,31 @@ Las pruebas incluidas cubren la combinación de filtros y la búsqueda; el flujo
 ## Recursos visuales
 
 Fotos de Unsplash descargadas en `public/images/` para que el catálogo no dependa de enlaces remotos. Consulta `public/images/CREDITS.md`. Las fuentes DM Sans y Manrope se cargan desde Google Fonts con alternativas locales del sistema; los avatares decorativos de portada son SVG locales. Iconos: Lucide (ISC).
+
+
+## Colombia, urbanizaciones y actualización de un proyecto existente
+
+La selección está limitada a Colombia y sigue este orden: departamento → ciudad/municipio → urbanización con autocompletado. Los controles se habilitan progresivamente y al cambiar departamento o ciudad se limpia la selección dependiente. El catálogo muestra todas las ofertas por defecto; puedes filtrar solo por departamento, ciudad, urbanización o combinar con torre y otros filtros. El navegador recuerda la selección geográfica; «Limpiar filtros» la borra.
+
+Si ya ejecutaste el esquema anterior, ejecuta **solo** `supabase/migrations/20261030_communities.sql` en el SQL Editor de Supabase, **antes de desplegar esta versión**. No vuelvas a ejecutar `schema.sql` sobre una base existente. La migración es transaccional y se puede volver a ejecutar: conserva las publicaciones y asigna las que no tienen urbanización a **Prato de la Toscana, Sabaneta, Antioquia**, según confirmó el propietario. No ejecuta cambios automáticamente contra tu proyecto. Para proyectos nuevos, `supabase/schema.sql` incluye la misma estructura.
+
+La lista de urbanizaciones es administrada en Supabase. El usuario puede buscar escribiendo, pero publicar requiere una coincidencia con una comunidad registrada de esa ciudad. No se verifica residencia ni se limita la lectura pública por comunidad. No se incluyen conjuntos no verificados ni se afirma contar con todas las urbanizaciones de Sabaneta: el catálogo de producción inicial contiene únicamente Prato de la Toscana. Para añadir otra, desde el SQL Editor:
+
+```sql
+insert into public.communities(name, municipality_id)
+select 'NOMBRE VERIFICADO DE LA URBANIZACIÓN', id
+from public.municipalities
+where department = 'Antioquia' and name = 'Sabaneta';
+```
+
+También puedes usar Table Editor → `communities`: `municipality_id` referencia una ciudad en `municipalities`. Agrega otros conjuntos indicando su ciudad correcta y recarga la aplicación. No cambies el ID de Prato de la Toscana: sus ofertas lo referencian. La torre, bloque o sector se escribe libremente, hasta 60 caracteres. Los usuarios de la aplicación solo pueden leer los catálogos geográficos; únicamente el administrador puede modificarlos. Una ciudad o urbanización con referencias no se puede borrar sin resolver esas referencias.
+
+El catálogo geográfico local contiene 1123 registros municipales en 33 agrupaciones departamentales (incluye Bogotá como distrito separado), obtenido de API Colombia con licencia MIT. Fuente, fecha y límites en `src/data/README.md`; sus identificadores no son códigos DIVIPOLA. No se requiere una API geográfica externa para usar la aplicación. Para actualizarlo, mantén sincronizados `src/data/colombia.json` y las filas de `public.municipalities`; conserva los IDs usados por comunidades existentes.
+
+En modo demo, los datos anteriores sin urbanización siguen disponibles en la comunidad original. La segunda comunidad demo es ficticia y solo sirve para probar los filtros; nunca se inserta en Supabase.
+
+## Página de detalle
+
+Las tarjetas enlazan a `/oferta/?id=IDENTIFICADOR`, una página independiente que funciona en hosting estático sin reglas de rutas dinámicas. Obtiene la oferta por ID desde Supabase, incluso al recargar o abrir un enlace compartido. Incluye foto, precio, urbanización, torre/sector, descripción, vendedor, WhatsApp y botón para copiar enlace. Las ofertas eliminadas, enlaces inválidos y errores de conexión tienen mensajes propios.
+
+El modal se conserva únicamente para confirmar la eliminación de una publicación. Las ofertas demo propias dependen del almacenamiento de su navegador; compartir su enlace no las copia a otros dispositivos. La página carga el contenido mediante JavaScript; las vistas previas sociales y SEO por producto requerirían renderizado de servidor o un servicio de metadatos adicional.

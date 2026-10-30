@@ -1,3 +1,4 @@
+import { ORIGINAL_COMMUNITY_ID, demoCommunities } from './communities';
 export const categories = [
   'Todas',
   'Hogar y decoración',
@@ -19,6 +20,7 @@ export interface Listing {
   kind: 'Venta' | 'Alquiler' | 'Servicio';
   condition: 'Nuevo' | 'Como nuevo' | 'Usado' | 'No aplica';
   building: string;
+  community_id?: string;
   image: string;
   seller: string;
   contact: string;
@@ -31,6 +33,8 @@ export interface Filters {
   kind: string;
   condition: string;
   building: string;
+  community?: string;
+  communityIds?: string[];
   sort: string;
 }
 export function filterListings(items: Listing[], f: Filters): Listing[] {
@@ -49,7 +53,11 @@ export function filterListings(items: Listing[], f: Filters): Listing[] {
         p.price <= f.max &&
         (!f.kind || p.kind === f.kind) &&
         (!f.condition || p.condition === f.condition) &&
-        (!f.building || p.building === f.building),
+        (!f.building || p.building === f.building) &&
+        (!f.community ||
+          (p.community_id || ORIGINAL_COMMUNITY_ID) === f.community) &&
+        (!f.communityIds ||
+          f.communityIds.includes(p.community_id || ORIGINAL_COMMUNITY_ID)),
     )
     .sort((a, b) =>
       f.sort === 'low'
@@ -168,6 +176,7 @@ export const seeds: Listing[] = [
       kind: p[4],
       condition: p[5],
       building: p[6],
+      community_id: i < 4 ? ORIGINAL_COMMUNITY_ID : demoCommunities[1].id,
       image: `/images/${p[7]}.jpg`,
       seller: p[8],
       contact: '',

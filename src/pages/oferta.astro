@@ -1,0 +1,77 @@
+---
+import '../styles/global.css';
+---
+
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Conoce esta oferta de tu comunidad en Entrevecinos."
+    />
+    <link rel="icon" href="/favicon.svg" />
+    <title>Detalle de oferta · Entrevecinos</title>
+  </head>
+  <body>
+    <header class="header">
+      <a class="brand" href="/" aria-label="Entrevecinos, inicio">
+        <img src="/favicon.svg" alt="" />
+        entre<span>vecinos</span>
+        <span class="brand-dot">.</span>
+      </a>
+      <a class="button dark" href="/">
+        Explorar ofertas
+      </a>
+    </header>
+    <main class="product-page">
+      <a class="text-button" href="/">
+        ← Volver al catálogo
+      </a>
+      <p id="product-status" role="status">
+        Cargando oferta…
+      </p>
+      <article id="product" class="product-layout" hidden>
+        <img id="product-image" class="product-image" alt="" />
+        <div class="detail-info">
+          <div id="product-category" class="eyebrow"></div>
+          <h1 id="product-title"></h1>
+          <div id="product-price" class="card-price"></div>
+          <div id="product-badges" class="detail-badges"></div>
+          <p id="product-description" class="product-description"></p>
+          <div class="seller-block">
+            <span id="product-avatar" class="seller-avatar"></span>
+            <div>
+              <span id="product-seller"></span>
+              <small id="product-location"></small>
+            </div>
+          </div>
+          <a
+            id="product-contact"
+            class="button dark contact-link"
+            target="_blank"
+            rel="noopener noreferrer"
+            hidden
+          >
+            Contactar por WhatsApp ↗
+          </a>
+          <p id="product-demo" class="small" hidden>
+            Esta es una oferta de ejemplo y no tiene contacto real.
+          </p>
+          <p class="detail-hint">
+            Acuerda la entrega y el pago directamente con tu vecino.
+          </p>
+          <button id="product-share" class="text-button" type="button">
+            Copiar enlace de la oferta
+          </button>
+          <p id="share-status" class="small" role="status"></p>
+        </div>
+      </article>
+      <noscript>Activa JavaScript para consultar esta oferta.</noscript>
+    </main>
+    <script>
+      import '../lib/product';
+    </script>
+  </body>
+</html>
