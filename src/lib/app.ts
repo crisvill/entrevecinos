@@ -36,6 +36,7 @@ import {
 } from './market';
 import { supabase } from './supabase';
 import { createId } from './id';
+import { optimizePhoto } from './photo';
 const icons = {
   UserRound,
   Plus,
@@ -572,15 +573,11 @@ publishForm.addEventListener('submit', async (e) => {
     if (old && old.owner_id !== currentUser.id)
       throw new Error('Esta oferta pertenece a otro vecino.');
     let image = (!removePhoto && old?.image) || '/images/community.jpg';
-    const file = d.get('photo') as File;
-    if (file?.size) {
-      if (
-        !['image/jpeg', 'image/png', 'image/webp'].includes(file.type) ||
-        file.size > 2 * 1024 * 1024
-      )
-        throw new Error(
-          'La foto debe ser JPG, PNG o WebP y pesar menos de 2 MB.',
-        );
+    const originalPhoto = d.get('photo') as File;
+    if (originalPhoto?.size) {
+      $('publish-message').textContent = 'Ajustando y comprimiendo tu foto…';
+      const file = await optimizePhoto(originalPhoto);
+      $('publish-message').textContent = 'Foto lista. Guardando tu oferta…';
       if (supabase) {
         const ext = {
           'image/jpeg': 'jpg',

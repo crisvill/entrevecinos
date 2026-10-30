@@ -36,6 +36,7 @@ En producción las variables `PUBLIC_*` se incorporan durante el build. Debes vo
 
 - Búsqueda tolerante a mayúsculas y tildes; categorías; filtros combinables por precio, tipo, estado y torre; orden por fecha o precio.
 - Detalle de la oferta, contacto por WhatsApp y fotos propias.
+- Las fotos se orientan y recortan al centro en formato 4:3, hasta 1200 × 900 píxeles, y se comprimen en el navegador a un máximo de 300 KB antes de subirlas (también en modo demo). Acepta originales de más de 2 MB; el límite del bucket se aplica al archivo ya optimizado. WebP preferido, con el formato compatible que ofrezca el navegador como alternativa. HEIC depende del soporte del navegador; si no se puede abrir, se solicita convertir a JPG.
 - Registro y acceso con email + contraseña y Google OAuth usando Supabase Auth.
 - Publicar, editar y eliminar ofertas propias. RLS impide modificar las de otra cuenta.
 - Favoritos persistentes **en este navegador**, disponibles también sin cuenta; no se sincronizan entre dispositivos.
