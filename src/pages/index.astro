@@ -1,6 +1,8 @@
 ---
 import '../styles/global.css';
+import { Image } from 'astro:assets';
 import { categories } from '../lib/market';
+import communityImage from '../assets/community.jpg';
 const icons = [
   'layout-grid',
   'house',
@@ -96,9 +98,9 @@ const icons = [
           </div>
         </div>
         <div class="hero-art">
-          <img
+          <Image
             class="hero-photo"
-            src="/images/community.jpg"
+            src={communityImage}
             alt="Interior acogedor con plantas, muebles de madera y luz natural"
           />
           <div class="art-shade"></div>
