@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.80.0",
+    "@vercel/speed-insights": "^2.0.0",
     "astro": "^5.16.0",
     "lucide": "^0.468.0"
   },
