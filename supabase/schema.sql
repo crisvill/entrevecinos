@@ -16,6 +16,7 @@ insert into public.municipalities(id, department, name) values
 on conflict (id) do nothing;
 
 create table public.communities (
+  estrato smallint constraint communities_estrato_check check (estrato between 1 and 6),
   id uuid primary key default gen_random_uuid(),
   name text not null check (char_length(trim(name)) between 1 and 120),
   municipality_id text not null references public.municipalities(id)

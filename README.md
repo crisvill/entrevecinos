@@ -100,7 +100,7 @@ La selección está limitada a Colombia y sigue este orden: departamento → ciu
 
 Si ya ejecutaste el esquema anterior, ejecuta **solo** `supabase/migrations/20261030_communities.sql` en el SQL Editor de Supabase, **antes de desplegar esta versión**. No vuelvas a ejecutar `schema.sql` sobre una base existente. La migración es transaccional y se puede volver a ejecutar: conserva las publicaciones y asigna las que no tienen urbanización a **Prato de la Toscana, Sabaneta, Antioquia**, según confirmó el propietario. No ejecuta cambios automáticamente contra tu proyecto. Para proyectos nuevos, `supabase/schema.sql` incluye la misma estructura.
 
-La lista de urbanizaciones es administrada en Supabase. El usuario puede buscar escribiendo, pero publicar requiere una coincidencia con una comunidad registrada de esa ciudad. No se verifica residencia ni se limita la lectura pública por comunidad. No se incluyen conjuntos no verificados ni se afirma contar con todas las urbanizaciones de Sabaneta: el catálogo de producción inicial contiene únicamente Prato de la Toscana. Para añadir otra, desde el SQL Editor:
+La lista de urbanizaciones es administrada en Supabase. El usuario puede buscar escribiendo, pero publicar requiere una coincidencia con una comunidad registrada de esa ciudad. No se verifica residencia ni se limita la lectura pública por comunidad. No se incluyen conjuntos no verificados ni se afirma contar con todas las urbanizaciones de Sabaneta: el catálogo inicial contiene Prato de la Toscana; la migración adicional del CSV amplía la lista según los datos suministrados (consulta la sección de importación). Para añadir otra, desde el SQL Editor:
 
 ```sql
 insert into public.communities(name, municipality_id)
@@ -135,3 +135,23 @@ Si falla la subida de una foto o el guardado, se intenta retirar únicamente los
 Los banners de `AdBanner.astro` aparecen en el catálogo y debajo del detalle, identificados como **PUBLICIDAD · EJEMPLO**. Enlazan a `/publicidad/`, que presenta los espacios disponibles. Son contenido local de demostración: no se cargan redes de anuncios, no hay cobros, formularios de contratación ni seguimiento publicitario. Para comercializarlos se deberán definir anunciantes, precios y contacto reales.
 
 `npm test` ejecuta todos los archivos `src/lib/*.test.ts`.
+
+
+## Importar urbanizaciones de Sabaneta y registrar estrato
+
+Ejecuta `supabase/migrations/20261030233000_sabaneta_communities_estrato.sql` completo en el SQL Editor de Supabase, después de la migración de comunidades (o de `schema.sql` en una base nueva). La importación agrega 107 urbanizaciones distintas a partir de las 109 filas del archivo suministrado. Es transaccional y repetible: conserva IDs, nombres existentes, publicaciones y permisos; Prato de la Toscana se reutiliza aunque el CSV incluya el prefijo «Unidad Residencial».
+
+`communities.estrato` es un entero opcional de **1 a 6**. Un valor `NULL` significa que no está registrado: no se usa cero ni se calcula a partir del barrio. Puedes editarlo desde Table Editor → communities. El archivo trae 18 estratos; los datos vacíos no borran los ya registrados. No se añade un formulario público para modificar este dato; el catálogo continúa siendo administrado en Supabase.
+
+La copia normalizada del archivo y las correcciones de formato están documentadas en `supabase/data/README.md`. La migración no elimina urbanizaciones que no estén en el CSV y aborta si detecta coincidencias ambiguas existentes. No la ejecuta automáticamente la aplicación. Para comprobar el resultado:
+
+```sql
+select c.id, c.name, c.estrato
+from public.communities c
+join public.municipalities m on m.id = c.municipality_id
+where m.country = 'CO' and m.department = 'Antioquia' and m.name = 'Sabaneta'
+order by c.name;
+```
+
+
+Si una ejecución anterior de la importación de Sabaneta devolvió `relation "sabaneta_import_source" does not exist`, reemplaza la consulta completa por la versión actual de `20261030233000_sabaneta_communities_estrato.sql`. Ahora contiene una sola sentencia `DO ...`, sin tablas ni funciones temporales y sin `BEGIN` / `COMMIT` separados. En una consulta nueva del SQL Editor, sin texto seleccionado, ejecútala completa. Se puede repetir aunque una ejecución anterior haya dejado parte de la preparación aplicada.

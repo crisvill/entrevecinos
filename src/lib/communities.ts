@@ -2,6 +2,7 @@ export interface Community {
   id: string;
   name: string;
   municipality_id: string;
+  estrato?: number | null;
 }
 export const ORIGINAL_COMMUNITY_ID = '00000000-0000-4000-8000-000000000001';
 export const demoCommunities: Community[] = [
