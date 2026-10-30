@@ -71,6 +71,15 @@ npm run preview
 
 ### Validación de Supabase después de configurarlo
 
+Si no llega el correo de confirmación:
+
+- Revisa spam y usa «Reenviar correo de confirmación» en el formulario. Espera al menos un minuto entre solicitudes. Una respuesta de registro sin error no demuestra que el mensaje se haya entregado ni que se haya creado una cuenta nueva: Supabase puede ocultar si una dirección ya está registrada.
+- En el panel de Supabase revisa los registros de **Authentication** para encontrar errores de envío o límites de solicitudes. No compartas tokens ni enlaces de confirmación al reportar un error.
+- El servicio de correo integrado tiene restricciones de destinatarios y límites de envío. Para registrar usuarios reales, configura **SMTP personalizado** en Authentication con un proveedor de correo, un remitente autorizado y su dominio verificado. Usa los registros del proveedor para comprobar entrega, rechazos y spam. Estas credenciales se guardan en Supabase, nunca en las variables `PUBLIC_*` de la aplicación.
+- Comprueba que el proveedor Email está habilitado, que la confirmación por correo está configurada y que **Site URL** y **Redirect URLs** corresponden al dominio desde el que registras la cuenta. Después de configurar SMTP, solicita un nuevo enlace para la cuenta pendiente; no hace falta borrarla.
+
+El archivo `.env` debe estar en la raíz del checkout, junto a `package.json`. Reinicia el servidor al cambiarlo; en un hosting estático debes volver a compilar y desplegar. La clave pública permite registrar e iniciar sesión, pero no configura el servicio de correo ni crea el esquema.
+
 1. Registra una cuenta, confirma el email y cierra/inicia sesión.
 2. Comprueba Google OAuth en un dominio autorizado.
 3. Publica una oferta con foto y comprueba que aparece en otro navegador.

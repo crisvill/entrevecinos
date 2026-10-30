@@ -345,6 +345,9 @@ const icons = [
         </button>
       </form>
       <p id="auth-message" class="form-message" role="status"></p>
+      <button id="auth-resend" class="text-button" type="button" hidden>
+        Reenviar correo de confirmación
+      </button>
       <button id="auth-switch" class="text-button">
         ¿Eres nuevo? Crea tu cuenta
       </button>
@@ -446,7 +449,7 @@ const icons = [
           </label>
         </div>
         <label>
-          Foto de la oferta
+          Foto de la oferta (opcional)
           <input
             name="photo"
             type="file"
@@ -454,6 +457,10 @@ const icons = [
           />
           <small>JPG, PNG o WebP. Máximo 2 MB.</small>
         </label>
+        <p id="photo-status" class="small" role="status"></p>
+        <button id="remove-photo" class="text-button" type="button" hidden>
+          Quitar foto
+        </button>
         <p id="publish-message" class="form-message" role="status"></p>
         <button class="button dark full" type="submit">
           Publicar oferta <i data-lucide="arrow-up-right"></i>

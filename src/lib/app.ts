@@ -35,6 +35,7 @@ import {
   type Category,
 } from './market';
 import { supabase } from './supabase';
+import { createId } from './id';
 const icons = {
   UserRound,
   Plus,
@@ -69,6 +70,24 @@ const publishDialog = $<HTMLDialogElement>('publish-dialog');
 const detailDialog = $<HTMLDialogElement>('detail-dialog');
 const publishForm = $<HTMLFormElement>('publish-form');
 const authForm = $<HTMLFormElement>('auth-form');
+const photoInput = publishForm.elements.namedItem('photo') as HTMLInputElement;
+let removePhoto = false;
+let existingPhoto = false;
+function updatePhotoControls() {
+  const selected = photoInput.files?.[0];
+  $('remove-photo').hidden = !selected && (!existingPhoto || removePhoto);
+  $('photo-status').textContent = selected
+    ? `Foto seleccionada: ${selected.name}`
+    : existingPhoto && !removePhoto
+      ? 'La oferta conserva su foto actual.'
+      : 'Sin foto propia. Se mostrará la imagen predeterminada.';
+}
+photoInput.addEventListener('change', updatePhotoControls);
+$('remove-photo').addEventListener('click', () => {
+  photoInput.value = '';
+  removePhoto = true;
+  updatePhotoControls();
+});
 const esc = (s: string) =>
   s.replace(
     /[&<>"']/g,
@@ -100,6 +119,25 @@ let currentUser: { id: string; name: string } | null = null;
 let view: 'all' | 'favorites' | 'mine' = 'all';
 let category = 'Todas';
 let signup = false;
+let confirmationEmail = '';
+let resendAvailableAt = 0;
+const resendButton = $<HTMLButtonElement>('auth-resend');
+function authErrorMessage(error: unknown): string {
+  const code = (error as { code?: string } | null)?.code;
+  if (code === 'email_not_confirmed')
+    return 'Tu correo aún no está confirmado. Revisa también spam o solicita otro correo de confirmación.';
+  if (code === 'over_email_send_rate_limit' || code === 'over_request_rate_limit')
+    return 'Se alcanzó el límite de solicitudes. Espera unos minutos antes de volver a intentar. Si continúa, contacta al administrador.';
+  if (code === 'email_address_not_authorized')
+    return 'El servicio de correo todavía no permite enviar a esta dirección. Contacta al administrador para habilitar el envío de confirmaciones.';
+  if (code === 'unexpected_failure')
+    return 'El servicio no pudo completar la solicitud. Inténtalo más tarde; si continúa, contacta al administrador.';
+  if (code === 'invalid_credentials')
+    return 'El correo o la contraseña no son correctos.';
+  return error instanceof Error
+    ? error.message
+    : 'No pudimos completar la solicitud. Inténtalo de nuevo.';
+}
 let pendingPublish = false;
 let toastTimer: ReturnType<typeof setTimeout>;
 function toast(message: string) {
@@ -222,6 +260,9 @@ function openPublish(item?: Listing) {
     return;
   }
   publishForm.reset();
+  removePhoto = false;
+  existingPhoto = Boolean(item?.image && item.image !== '/images/community.jpg');
+  updatePhotoControls();
   $('publish-message').textContent = '';
   $('publish-title').textContent = item
     ? 'Unos pequeños ajustes.'
@@ -416,6 +457,8 @@ $('auth-switch').addEventListener('click', () => {
     ? '¿Ya tienes cuenta? Ingresa'
     : '¿Eres nuevo? Crea tu cuenta';
   $('auth-message').textContent = '';
+  resendButton.hidden = true;
+  confirmationEmail = '';
 });
 authForm.addEventListener('submit', async (e) => {
   e.preventDefault();
@@ -423,10 +466,13 @@ authForm.addEventListener('submit', async (e) => {
   const data = new FormData(authForm);
   const button = $<HTMLButtonElement>('auth-submit');
   button.disabled = true;
+  $<HTMLButtonElement>('auth-switch').disabled = true;
+  resendButton.hidden = true;
   $('auth-message').textContent = '';
+  const email = String(data.get('email')).trim();
   try {
     const credentials = {
-      email: String(data.get('email')),
+      email,
       password: String(data.get('password')),
     };
     const result = signup
@@ -439,20 +485,51 @@ authForm.addEventListener('submit', async (e) => {
         })
       : await supabase.auth.signInWithPassword(credentials);
     if (result.error) throw result.error;
-    authForm.reset();
     if (result.data.session) {
+      authForm.reset();
+      confirmationEmail = '';
       authDialog.close();
       toast('¡Bienvenido a la comunidad!');
-    } else
+    } else {
+      (authForm.elements.namedItem('password') as HTMLInputElement).value = '';
+      confirmationEmail = email;
+      resendButton.hidden = false;
       $('auth-message').textContent =
-        'Revisa tu correo para confirmar la cuenta. Después podrás ingresar.';
+        'Si el correo puede registrarse, recibirás un enlace de confirmación. Revisa tu bandeja y spam. Si ya tienes cuenta, ingresa. Si no llega, puedes solicitar otro enlace.';
+    }
   } catch (error) {
-    $('auth-message').textContent =
-      error instanceof Error
-        ? error.message
-        : 'No pudimos iniciar sesión. Inténtalo de nuevo.';
+    if ((error as { code?: string } | null)?.code === 'email_not_confirmed') {
+      confirmationEmail = email;
+      resendButton.hidden = false;
+    }
+    $('auth-message').textContent = authErrorMessage(error);
   } finally {
     button.disabled = false;
+    $<HTMLButtonElement>('auth-switch').disabled = false;
+  }
+});
+resendButton.addEventListener('click', async () => {
+  if (!supabase || !confirmationEmail) return;
+  if (Date.now() < resendAvailableAt) {
+    $('auth-message').textContent =
+      'Espera un minuto entre solicitudes de confirmación y vuelve a intentarlo.';
+    return;
+  }
+  resendButton.disabled = true;
+  resendAvailableAt = Date.now() + 60_000;
+  try {
+    const { error } = await supabase.auth.resend({
+      type: 'signup',
+      email: confirmationEmail,
+      options: { emailRedirectTo: location.origin + '/' },
+    });
+    if (error) throw error;
+    $('auth-message').textContent =
+      'Solicitud recibida. Si esta dirección tiene una cuenta pendiente de confirmación, recibirás un nuevo enlace. Revisa también spam. Si no llega, contacta al administrador.';
+  } catch (error) {
+    $('auth-message').textContent = authErrorMessage(error);
+  } finally {
+    resendButton.disabled = false;
   }
 });
 $('google-login').addEventListener('click', async () => {
@@ -490,11 +567,11 @@ publishForm.addEventListener('submit', async (e) => {
   let uploadedPath: string | null = null;
   try {
     const d = new FormData(publishForm);
-    const id = String(d.get('id') || crypto.randomUUID());
+    const id = String(d.get('id') || createId());
     const old = items.find((p) => p.id === id);
     if (old && old.owner_id !== currentUser.id)
       throw new Error('Esta oferta pertenece a otro vecino.');
-    let image = old?.image || '/images/community.jpg';
+    let image = (!removePhoto && old?.image) || '/images/community.jpg';
     const file = d.get('photo') as File;
     if (file?.size) {
       if (
@@ -510,7 +587,7 @@ publishForm.addEventListener('submit', async (e) => {
           'image/png': 'png',
           'image/webp': 'webp',
         }[file.type]!;
-        uploadedPath = `${currentUser.id}/${crypto.randomUUID()}.${ext}`;
+        uploadedPath = `${currentUser.id}/${createId()}.${ext}`;
         const { error } = await supabase.storage
           .from('listing-images')
           .upload(uploadedPath, file, { contentType: file.type });
