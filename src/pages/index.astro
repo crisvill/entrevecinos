@@ -1,0 +1,472 @@
+---
+import '../styles/global.css';
+import { categories } from '../lib/market';
+const icons = [
+  'layout-grid',
+  'house',
+  'cooking-pot',
+  'shirt',
+  'sparkles',
+  'car-front',
+  'monitor',
+  'ellipsis',
+];
+---
+
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Entrevecinos: descubre productos, emprendimientos y servicios de tu comunidad. Lo que necesitas, más cerca."
+    />
+    <link rel="icon" href="/favicon.svg" />
+    <title>Entrevecinos · Lo bueno está cerca</title>
+  </head>
+  <body>
+    <header class="header">
+      <a class="brand" href="/" aria-label="Entrevecinos, inicio">
+        <img src="/favicon.svg" alt="" />
+        entre<span>vecinos</span>
+        <span class="brand-dot">.</span>
+      </a>
+      <nav aria-label="Principal">
+        <button class="nav-link active" id="explore">
+          Explorar
+        </button>
+        <button class="nav-link" id="favorites-nav">
+          Mis favoritos <span id="favorite-count">0</span>
+        </button>
+        <button class="nav-link" id="mine-nav">
+          Mis publicaciones
+        </button>
+      </nav>
+      <div class="header-actions">
+        <button class="login-link" id="login">
+          <i data-lucide="user-round"></i>
+          <span>Ingresar</span>
+        </button>
+        <button class="button dark" data-publish>
+          <i data-lucide="plus"></i> Publicar <span>oferta</span>
+        </button>
+      </div>
+    </header>
+    <main>
+      <section class="hero">
+        <div class="hero-copy">
+          <div class="eyebrow">
+            <span></span> TU COMUNIDAD, MÁS CONECTADA
+          </div>
+          <h1>
+            Lo que buscas.
+            <br />
+            Más cerca de <em>ti.</em>
+            <svg viewBox="0 0 100 16" aria-hidden="true">
+              <path d="M3 10Q50-1 97 8M12 15Q53 5 87 12" />
+            </svg>
+          </h1>
+          <p>
+            Descubre lo que tus vecinos tienen para ofrecer.
+            <br class="desktop" /> Compra, vende y encuentra pequeños tesoros
+            sin ir lejos.
+          </p>
+          <form id="search-form" class="search">
+            <i data-lucide="search"></i>
+            <input
+              id="search"
+              type="search"
+              placeholder="¿Qué estás buscando hoy?"
+              aria-label="Buscar ofertas"
+            />
+            <button type="submit">
+              Buscar <i data-lucide="arrow-right"></i>
+            </button>
+          </form>
+          <div class="hero-note">
+            <span class="avatar-stack">
+              <img src="/images/neighbor-1.svg" alt="" />
+              <img src="/images/neighbor-2.svg" alt="" />
+              <img src="/images/neighbor-3.svg" alt="" />
+            </span>
+            <span>
+              Pequeños negocios. <strong>Grandes vecinos.</strong>
+            </span>
+          </div>
+        </div>
+        <div class="hero-art">
+          <img
+            class="hero-photo"
+            src="/images/community.jpg"
+            alt="Interior acogedor con plantas, muebles de madera y luz natural"
+          />
+          <div class="art-shade"></div>
+          <span class="floating-tag tag-one">
+            <span>✦</span> Aquí hay talento local
+          </span>
+          <div class="floating-card">
+            <span class="card-icon">
+              <i data-lucide="heart-handshake"></i>
+            </span>
+            <div>
+              Mucho más que comprar.<strong>Hacer comunidad.</strong>
+            </div>
+            <span class="sparkle">✳</span>
+          </div>
+          <span class="art-caption">
+            De tu vecino, para ti. <i data-lucide="arrow-up-right"></i>
+          </span>
+        </div>
+      </section>
+      <section class="category-section" aria-label="Categorías">
+        <div class="section-overline">UN POCO DE TODO, CERCA DE CASA</div>
+        <div class="categories">
+          {categories.map((c, i) => (
+            <button
+              class:list={['category', { selected: i === 0 }]}
+              data-category={c}
+            >
+              <span>
+                <i data-lucide={icons[i]}></i>
+              </span>
+              {c === 'Todas' ? 'Todas las ofertas' : c}
+            </button>
+          ))}
+        </div>
+      </section>
+      <section class="market-section" id="market">
+        <div class="market-heading">
+          <div>
+            <div class="section-overline">EL TABLÓN DEL BARRIO</div>
+            <h2 id="view-title">
+              Descubre lo que hay cerca <i data-lucide="arrow-down-right"></i>
+            </h2>
+            <p id="result-count" aria-live="polite">
+              Cargando ofertas…
+            </p>
+          </div>
+          <div class="market-tools">
+            <button id="toggle-filters" class="filter-toggle">
+              <i data-lucide="sliders-horizontal"></i> Filtros
+            </button>
+            <label class="sort-label">
+              Ordenar por{' '}
+              <select id="sort" aria-label="Orden de las ofertas">
+                <option value="recent">Más recientes</option>
+                <option value="low">Menor precio</option>
+                <option value="high">Mayor precio</option>
+              </select>
+            </label>
+          </div>
+        </div>
+        <div class="market-layout">
+          <aside class="filters" id="filter-panel">
+            <div class="filter-title">
+              <h3>Afina tu búsqueda</h3>
+              <i data-lucide="sliders-horizontal"></i>
+            </div>
+            <label>
+              Tipo de oferta
+              <select id="kind">
+                <option value="">Todas las ofertas</option>
+                <option>Venta</option>
+                <option>Alquiler</option>
+                <option>Servicio</option>
+              </select>
+            </label>
+            <fieldset>
+              <legend>Precio máximo</legend>
+              <div class="price-output">
+                <span>Desde $0</span>
+                <strong id="price-label">Sin límite</strong>
+              </div>
+              <input
+                type="range"
+                id="price"
+                min="0"
+                max="1000000"
+                step="10000"
+                value="1000000"
+                aria-label="Precio máximo"
+              />
+              <div class="range-labels">
+                <span>$0</span>
+                <span>$1.000.000+</span>
+              </div>
+            </fieldset>
+            <fieldset>
+              <legend>Estado</legend>
+              <label class="radio">
+                <input type="radio" name="condition" value="" checked />
+                Todos
+              </label>
+              <label class="radio">
+                <input type="radio" name="condition" value="Nuevo" />
+                Nuevo
+              </label>
+              <label class="radio">
+                <input type="radio" name="condition" value="Como nuevo" />
+                Como nuevo
+              </label>
+              <label class="radio">
+                <input type="radio" name="condition" value="Usado" />
+                Usado
+              </label>
+            </fieldset>
+            <label>
+              Ubicación
+              <select id="building">
+                <option value="">Toda la comunidad</option>
+                <option>Torre 1</option>
+                <option>Torre 2</option>
+                <option>Torre 3</option>
+              </select>
+            </label>
+            <button id="clear-filters" class="clear">
+              Limpiar filtros <i data-lucide="rotate-ccw"></i>
+            </button>
+            <div class="neighbor-note">
+              <i data-lucide="sprout"></i>
+              <h4>Lo local se siente bien.</h4>
+              <p>
+                Detrás de cada oferta hay un vecino. Apoya lo que nace cerca.
+              </p>
+            </div>
+          </aside>
+          <div>
+            <div id="cards" class="cards" aria-live="polite"></div>
+            <div id="empty" class="empty" hidden>
+              <i data-lucide="search-x"></i>
+              <h3>No encontramos ofertas por aquí</h3>
+              <p>Prueba otros filtros o publica la primera oferta.</p>
+              <button class="button dark" id="empty-reset">
+                Ver todas las ofertas
+              </button>
+            </div>
+            <p class="end-note" id="end-note">
+              <span>✦</span> Encontrar algo bueno empieza por mirar cerca.
+            </p>
+          </div>
+        </div>
+      </section>
+      <section class="publish-banner">
+        <div class="banner-icon">
+          <i data-lucide="store"></i>
+        </div>
+        <div>
+          <span>TODOS TENEMOS ALGO QUE OFRECER</span>
+          <h2>Tu próximo cliente puede ser tu vecino.</h2>
+          <p>
+            Dale visibilidad a tu emprendimiento o una segunda vida a lo que ya
+            no usas.
+          </p>
+        </div>
+        <button class="button dark" data-publish>
+          Publicar mi primera oferta <i data-lucide="arrow-up-right"></i>
+        </button>
+      </section>
+    </main>
+    <footer>
+      <a class="brand" href="/">
+        entre<span>vecinos</span>.
+      </a>
+      <p>Hecho para estar más cerca.</p>
+      <span>© {new Date().getFullYear()} Entrevecinos</span>
+      <button id="about-demo">
+        Sobre esta comunidad <i data-lucide="arrow-up-right"></i>
+      </button>
+    </footer>
+    <div class="demo-label" id="demo-label">
+      Modo demo · datos de ejemplo
+    </div>
+    <dialog id="auth-dialog">
+      <button class="close" data-close aria-label="Cerrar">
+        <i data-lucide="x"></i>
+      </button>
+      <div class="modal-logo">
+        <img src="/favicon.svg" alt="" />
+      </div>
+      <div class="eyebrow">BIENVENIDO A TU COMUNIDAD</div>
+      <h2 id="auth-title">Qué bueno verte por aquí.</h2>
+      <p>Conecta con tus vecinos y descubre lo que hay cerca.</p>
+      <button id="google-login" class="google-button">
+        <svg width="19" height="19" viewBox="0 0 24 24" aria-hidden="true">
+          <path
+            fill="#4285F4"
+            d="M22 12.2c0-.7-.1-1.4-.2-2.1H12v4h5.6a4.8 4.8 0 0 1-2.1 3.1v2.6h3.4c2-1.8 3.1-4.5 3.1-7.6Z"
+          />
+          <path
+            fill="#34A853"
+            d="M12 22c2.8 0 5.1-.9 6.8-2.5l-3.4-2.6c-.9.6-2.1.9-3.4.9-2.7 0-5-1.8-5.8-4.2H2.7v2.7A10.3 10.3 0 0 0 12 22Z"
+          />
+          <path
+            fill="#FBBC05"
+            d="M6.2 13.6a6 6 0 0 1 0-3.8V7.1H2.7a10 10 0 0 0 0 9.2Z"
+          />
+          <path
+            fill="#EA4335"
+            d="M12 5.6c1.5 0 2.8.5 3.8 1.5l2.9-2.9A9.6 9.6 0 0 0 12 1.5a10.3 10.3 0 0 0-9.3 5.6l3.5 2.7A6.2 6.2 0 0 1 12 5.6Z"
+          />
+        </svg>
+        Continuar con Google
+      </button>
+      <div class="divider">o con tu correo</div>
+      <form id="auth-form">
+        <label id="name-field" hidden>
+          Tu nombre
+          <input name="name" autocomplete="name" maxlength="60" />
+        </label>
+        <label>
+          Correo electrónico
+          <input
+            name="email"
+            type="email"
+            required
+            autocomplete="email"
+            placeholder="tu@correo.com"
+          />
+        </label>
+        <label>
+          Contraseña
+          <input
+            name="password"
+            type="password"
+            minlength="8"
+            required
+            autocomplete="current-password"
+            placeholder="Al menos 8 caracteres"
+          />
+        </label>
+        <button class="button dark full" type="submit" id="auth-submit">
+          Ingresar
+        </button>
+      </form>
+      <p id="auth-message" class="form-message" role="status"></p>
+      <button id="auth-switch" class="text-button">
+        ¿Eres nuevo? Crea tu cuenta
+      </button>
+      <button id="demo-login" class="demo-button">
+        Explorar como vecino de prueba <i data-lucide="arrow-right"></i>
+      </button>
+      <p class="small" id="auth-demo-note">
+        En modo demo no se solicitan ni guardan contraseñas.
+      </p>
+    </dialog>
+    <dialog id="publish-dialog" class="wide-dialog">
+      <button class="close" data-close aria-label="Cerrar">
+        <i data-lucide="x"></i>
+      </button>
+      <div class="eyebrow">COMPARTE CON TU COMUNIDAD</div>
+      <h2 id="publish-title">Algo bueno que ofrecer.</h2>
+      <p>Cuéntales a tus vecinos qué tienes para ellos.</p>
+      <form id="publish-form">
+        <input type="hidden" name="id" />
+        <label>
+          Título de tu oferta
+          <input
+            name="title"
+            required
+            maxlength="90"
+            placeholder="Ej. Galletas caseras por encargo"
+          />
+        </label>
+        <div class="form-row">
+          <label>
+            Categoría
+            <select name="category" required>
+              {categories.slice(1).map((c) => (
+                <option>{c}</option>
+              ))}
+            </select>
+          </label>
+          <label>
+            Tipo
+            <select name="kind">
+              <option>Venta</option>
+              <option>Alquiler</option>
+              <option>Servicio</option>
+            </select>
+          </label>
+        </div>
+        <div class="form-row">
+          <label>
+            Precio (COP)
+            <input
+              type="number"
+              name="price"
+              min="0"
+              max="1000000000"
+              step="1"
+              required
+              placeholder="0 para regalar"
+            />
+          </label>
+          <label>
+            Estado
+            <select name="condition">
+              <option>Nuevo</option>
+              <option>Como nuevo</option>
+              <option>Usado</option>
+              <option>No aplica</option>
+            </select>
+          </label>
+        </div>
+        <label>
+          Descripción
+          <textarea
+            name="description"
+            required
+            rows="3"
+            maxlength="2000"
+            placeholder="Detalles, disponibilidad y todo lo que deban saber…"
+          ></textarea>
+        </label>
+        <div class="form-row">
+          <label>
+            Ubicación
+            <select name="building">
+              <option>Torre 1</option>
+              <option>Torre 2</option>
+              <option>Torre 3</option>
+            </select>
+          </label>
+          <label>
+            WhatsApp con código de país
+            <input
+              name="contact"
+              type="tel"
+              pattern="[0-9]{8,15}"
+              required
+              placeholder="573001234567"
+            />
+            <small>Visible al abrir tu oferta.</small>
+          </label>
+        </div>
+        <label>
+          Foto de la oferta
+          <input
+            name="photo"
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+          />
+          <small>JPG, PNG o WebP. Máximo 2 MB.</small>
+        </label>
+        <p id="publish-message" class="form-message" role="status"></p>
+        <button class="button dark full" type="submit">
+          Publicar oferta <i data-lucide="arrow-up-right"></i>
+        </button>
+      </form>
+    </dialog>
+    <dialog id="detail-dialog" class="detail-dialog">
+      <button class="close" data-close aria-label="Cerrar">
+        <i data-lucide="x"></i>
+      </button>
+      <div id="detail-content"></div>
+    </dialog>
+    <div id="toast" role="status" class="toast" hidden></div>
+    <script>
+      import '../lib/app';
+    </script>
+  </body>
+</html>
